@@ -104,10 +104,12 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
     $group = CRM_Core_PseudoConstant::nestedGroup();
     $form->addElement('text', 'sort_name', ts('Name or email'));
     $form->addElement('select', 'country', ts('Country'), $this->GetCountry(), ['class' => 'crm-select2 huge', 'onChange'=>'CountryChange(this.value)']);
+    $form->addRadio('countryRadio', ts(''), $and, [], ['class' => 'crm-form-radio huge']);
+    $form->setDefaults(array('countryRadio'=>'0'));
 
     $form->addElement('select', 'kraj', ts('State province'), [], ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- choose country first -', 'disabled']);
-    $form->addRadio('krajRadio', ts(''), $and, [], ['class' => 'crm-form-radio huge']);
-    $form->setDefaults(array('krajRadio'=>'0'));
+    $form->addRadio('krajRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
+    $form->setDefaults(array('krajRadio'=>'1'));
 
     $form->addElement('select', 'group', ts('Group'), $group, ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- any group -']);
     $form->addRadio('groupRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
@@ -236,8 +238,13 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
       foreach ($province as $value) {
         $pom[]="a.state_province_id = {$value}";
       }
-      $pom2=implode(' OR ', $pom);
-      $clauses[]="(".$pom2.")";
+      if($provinceRadio==1){
+        $pom2=implode(' AND ', $pom);
+        $clauses[]=$pom2;
+      } elseif($provinceRadio==0){
+        $pom2=implode(' OR ', $pom);
+        $clauses[]="(".$pom2.")";
+      }
     }
 
 
