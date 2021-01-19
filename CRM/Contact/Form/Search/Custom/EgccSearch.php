@@ -128,7 +128,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
 
     $this->setTitle('Search');
 
-    $form->assign('elements', array('sort_name', 'country', 'kraj', 'krajRadio', 'email', 'group', 'groupRadio', 'event', 'eventRadio', 'tag', 'tagRadio', 'id'));
+    $form->assign('elements', array('sort_name', 'country', 'countryRadio', 'kraj', 'krajRadio', 'email', 'group', 'groupRadio', 'event', 'eventRadio', 'tag', 'tagRadio', 'id'));
   }
 
   /**
