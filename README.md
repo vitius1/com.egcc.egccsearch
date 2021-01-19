@@ -1,6 +1,6 @@
 # com.egcc.egccsearch
 
-![Screenshot](/images/screenshot.png)
+![Screenshot](https://ctrlv.cz/eEHg)
 
 (*FIXME: In one or two paragraphs, describe what the extension does and why one would download it. *)
 
