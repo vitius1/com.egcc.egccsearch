@@ -16,17 +16,48 @@
         <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
         <table class="form-layout-compressed">
             {* Loop through all defined search criteria fields (defined in the buildForm() function). *}
+            {assign var="withradio" value="0"}
             {foreach from=$elements item=element}
-                <tr class="crm-contact-custom-search-form-row-{$element}">
-                    <td class="label">{$form.$element.label}</td>
-                    <td>{$form.$element.html}</td>
-                </tr>
+                {if $form.$element.html|strstr:"crm-form-radio"}
+                  {assign var="html" value=$form.$element.html}
+                  {assign var="withradio" value="1"}
+                {else}
+                  {if $withradio=="1"}
+                    {assign var="withradio" value="0"}
+                    <tr class="crm-contact-custom-search-form-row-{$element}">
+                        <td class="label">{$form.$element.label}</td>
+                        <td>{$form.$element.html}</td>
+                        <td class="show-hide-radio" style="display: none;">{$html}</td>
+                        {assign var="html" value=""}
+                    </tr>
+                  {elseif $form.$element.label|strstr:"Show more options"}
+                  <tr class="crm-contact-custom-search-form-row-{$element}">
+                      <td></td>
+                      <td></td>
+                      <td>{$form.$element.html}{$form.$element.label}</td>
+                  </tr>
+                  {else}
+                    <tr class="crm-contact-custom-search-form-row-{$element}">
+                        <td class="label">{$form.$element.label}</td>
+                        <td>{$form.$element.html}</td>
+                    </tr>
+                  {/if}
+                {/if}
             {/foreach}
         </table>
         <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
     </div><!-- /.crm-accordion-body -->
 </div><!-- /.crm-accordion-wrapper -->
 </div><!-- /.crm-form-block -->
+
+
+
+
+
+
+
+
+
 
 {if $rowsEmpty || $rows}
 <div class="crm-content-block">

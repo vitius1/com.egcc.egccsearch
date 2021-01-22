@@ -104,31 +104,34 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
     $group = CRM_Core_PseudoConstant::nestedGroup();
     $form->addElement('text', 'sort_name', ts('Name or email'));
     $form->addElement('select', 'country', ts('Country'), $this->GetCountry(), ['class' => 'crm-select2 huge', 'onChange'=>'CountryChange(this.value)']);
-    $form->addRadio('countryRadio', ts(''), $and, [], ['class' => 'crm-form-radio huge']);
+    $form->addRadio('countryRadio', ts(''), $and, ['class' => 'crm-form-radio']);
     $form->setDefaults(array('countryRadio'=>'0'));
 
     $form->addElement('select', 'kraj', ts('State province'), [], ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- choose country first -', 'disabled']);
-    $form->addRadio('krajRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
+    $form->addRadio('krajRadio', ts(''), $andOr, ['class' => 'crm-form-radio']);
     $form->setDefaults(array('krajRadio'=>'1'));
 
     $form->addElement('select', 'group', ts('Group'), $group, ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- any group -']);
-    $form->addRadio('groupRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
+    $form->addRadio('groupRadio', ts(''), $andOr, ['class' => 'crm-form-radio']);
     $form->setDefaults(array('groupRadio'=>'1'));
     //$form->addElement('select', 'relationship', ts('Having this relationship'), $this->GetRelationship(), ['class' => 'crm-select2 huge']);
 
     $form->addElement('select', 'event', ts('Event'), $this->GetEvent(), ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- any event -']);
-    $form->addRadio('eventRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
+    $form->addRadio('eventRadio', ts(''), $andOr, ['class' => 'crm-form-radio']);
     $form->setDefaults(array('eventRadio'=>'1'));
 
     $form->addElement('select', 'tag', ts('Tag'), $this->GetTag(), ['class' => 'crm-select2 huge','multiple' => 'multiple','placeholder' => '- any tag -']);
-    $form->addRadio('tagRadio', ts(''), $andOr, [], ['class' => 'crm-form-radio huge']);
+    $form->addRadio('tagRadio', ts(''), $andOr, ['class' => 'crm-form-radio']);
     $form->setDefaults(array('tagRadio'=>'1'));
+
+    $form->addElement('checkbox', 'showHide', 'Show more options', '', ['class' => 'crm-form-checkbox']);
 
     $form->addElement('hidden', 'id');
 
     $this->setTitle('Search');
 
-    $form->assign('elements', array('sort_name', 'country', 'countryRadio', 'kraj', 'krajRadio', 'email', 'group', 'groupRadio', 'event', 'eventRadio', 'tag', 'tagRadio', 'id'));
+    $form->assign('elements', array('sort_name', 'countryRadio', 'country', 'krajRadio', 'kraj', 'email',
+                                    'groupRadio', 'group', 'eventRadio', 'event', 'tagRadio', 'tag', 'showHide', 'id'));
   }
 
   /**
@@ -190,7 +193,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
    */
   public function from() {
     return "civicrm_contact c
-            left join civicrm_email e ON c.id = e.contact_id
+            left join civicrm_email e ON c.id = e.contact_id and e.is_primary=1
             left join civicrm_address a on c.id = a.contact_id and a.is_primary=1
             left join civicrm_country co on a.country_id = co.id
             left join civicrm_state_province pr on a.state_province_id = pr.id
@@ -319,7 +322,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
     }
 
 
-    $clauses[] = "e.is_primary = 1";
+    $clauses[] = "c.is_deleted = 0";
 
 
     // This if-structure was copied from another search.
@@ -338,6 +341,9 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
         $contactIDs = implode(', ', $contactIDs);
         $clauses[] = "contact.id IN ( $contactIDs )";
       }
+
+      $clauses[] = "c.is_deleted = 0";
+
     }
 
     return implode(' AND ', $clauses);
@@ -408,7 +414,18 @@ function CountryChange(value) {
     $("#kraj").find('option').remove();
     $("#kraj").attr("disabled", true);
   }
-
 }
+
+
+
+
+$("body").on("click", "#showHide", function(){
+  if($("#showHide").is(":checked")){
+    $(".show-hide-radio").show();
+  } else {
+    $(".show-hide-radio").hide();
+  }
+
+});
 </script>
 <?php
