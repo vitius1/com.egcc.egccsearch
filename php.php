@@ -7,9 +7,8 @@
  */
 class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
   protected $_formValues;
-  protected $_aclFrom = NULL;
-  protected $_aclWhere = NULL;
-  public $_permissionedComponent;
+
+  protected $_where = ' (1) ';
 
 
   public function __construct(&$formValues) {
@@ -22,7 +21,12 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
       ts('Country') => 'country',
     );
   }
-
+  
+  public function __destruct() {
+    // mysql drops the tables when connection is terminated
+    // cannot drop tables here, since the search might be used
+    // in other parts after the object is destroyed
+  }
 
 
 
@@ -169,30 +173,28 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
             WHERE  $where
             GROUP BY $grouping
             ";
-            
-            //for only contact ids ignore order.
-            if (!$justIDs) {
-              // Define ORDER BY for query in $sort, with default value
-              if (!empty($sort)) {
-                if (is_string($sort)) {
-                  $sort = CRM_Utils_Type::escape($sort, 'String');
-                  $sql .= " ORDER BY $sort ";
-                }
-                else {
-                  $sql .= " ORDER BY " . trim($sort->orderBy());
-                }
-              }
-              else {
-                $sql .= " ORDER BY sort_name ASC";
-              }
-            }
+    // Define ORDER BY for query in $sort, with default value
+    if (!$justIDs) {
+      if (!empty($sort)) {
+        if (is_string($sort)) {
+          $sort = CRM_Utils_Type::escape($sort, 'String');
+          $sql .= " ORDER BY $sort ";
+        }
+        else {
+          $sql .= " ORDER BY " . trim($sort->orderBy());
+        }
+      }
+      else {
+        $sql .= " ORDER BY sort_name ASC";
+      }
+    }
+    else {
+      $sql .= " ORDER BY sort_name ASC";
+    }
 
-
-            if ($rowcount > 0 && $offset >= 0) {
-              $offset = CRM_Utils_Type::escape($offset, 'Int');
-              $rowcount = CRM_Utils_Type::escape($rowcount, 'Int');
-              $sql .= " LIMIT $offset, $rowcount ";
-            }
+    if ($offset >= 0 && $rowcount > 0) {
+      $sql .= " LIMIT $offset, $rowcount ";
+    }
 
     /* Uncomment the next 2 lines to see the exact query you're generating */
 
@@ -223,6 +225,24 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
    * Returns the where clause.
    */
   public function where($includeContactIDs = FALSE) {
+    if ($includeContactIDs) {
+      $contactIDs = array();
+      foreach ($this->_formValues as $id => $value) {
+        if ($value &&
+            substr($id, 0, CRM_Core_Form::CB_PREFIX_LEN) == CRM_Core_Form::CB_PREFIX
+        ) {
+          $contactIDs[] = substr($id, CRM_Core_Form::CB_PREFIX_LEN);
+        }
+      }
+
+      if (!empty($contactIDs)) {
+        $contactIDs = implode(', ', $contactIDs);
+        $clauses[] = "contact.id IN ( $contactIDs )";
+      }
+      $where=implode(' AND ', $clauses);
+      
+      
+      
     $clauses = array();
 
     $name = $this->_formValues['sort_name'];
@@ -264,6 +284,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
       }
     }
 
+
     if($group[0] != "") {
       $pom=[];
       foreach ($group as $g) {
@@ -303,6 +324,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
         $clauses[]="(".$pom2.")";
       }
     }
+
     /*
     if($relationship != "") {
       $date=date("Y-m-d");
@@ -316,6 +338,7 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
       )";
     }
     */
+
     if($event[0] != "") {
       $pom=[];
       foreach ($event as $e) {
@@ -332,66 +355,40 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
       }
     }
 
+
     $clauses[] = "c.is_deleted = 0";
 
 
     // This if-structure was copied from another search.
     // Not sure what it is supposed to do.
-    if ($includeContactIDs) {
-      $contactIDs = [];
-      foreach ($this->_formValues as $id => $value) {
-        if ($value &&
-          substr($id, 0, CRM_Core_Form::CB_PREFIX_LEN) == CRM_Core_Form::CB_PREFIX
-        ) {
-          $contactIDs[] = substr($id, CRM_Core_Form::CB_PREFIX_LEN);
-        }
-      }
+    
+      
+    }else {
+      $where = $this->_where;
+    }
 
-      if (!empty($contactIDs)) {
-        $contactIDs = implode(', ', $contactIDs);
-        $clauses[] = "contact_a.id IN ( $contactIDs )";
-      }
-    }  
-
-    return implode(' AND ', $clauses);;
+    return $where;
   }
 
   /*
    * Functions below generally don't need to be modified
    */
 
-  /**
-   * @inheritDoc
-   */
-  public function count() {
-    $sql = $this->all();
-
-    $dao = CRM_Core_DAO::executeQuery($sql);
+   public function count() {
+     $sql = $this->all();
+    $dao = CRM_Core_DAO::executeQuery($sql, CRM_Core_DAO::$_nullArray
+    );
     return $dao->N;
-  }
+   }
 
-  /**
-   * @param int $offset
-   * @param int $rowcount
-   * @param null $sort
-   * @param bool $returnSQL Not used; included for consistency with parent; SQL is always returned
-   *
-   * @return string
-   */
-  public function contactIDs($offset = 0, $rowcount = 0, $sort = NULL, $returnSQL = TRUE) {
-    return $this->all($offset, $rowcount, $sort, FALSE, TRUE);
-  }
+   public function contactIDs($offset = 0, $rowcount = 0, $sort = NULL, $returnSQL = FALSE) {
+     return $this->all($offset, $rowcount, $sort, FALSE, TRUE);
+   }
 
-  /**
-   * @return array
-   */
   public function &columns() {
     return $this->_columns;
   }
 
-  /**
-   * @param $title
-   */
   public function setTitle($title) {
     if ($title) {
       CRM_Utils_System::setTitle($title);
@@ -401,18 +398,8 @@ class CRM_Contact_Form_Search_Custom_EgccSearch extends CRM_Contact_Form_Search_
     }
   }
 
-  /**
-   * @return null
-   */
   public function summary() {
     return NULL;
-  }
-
-  /**
-   * @param string $tableAlias
-   */
-  public function buildACLClause($tableAlias = 'contact') {
-    list($this->_aclFrom, $this->_aclWhere) = CRM_Contact_BAO_Contact_Permission::cacheClause($tableAlias);
   }
 
 }
