@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<menu>
+  <item>
+    <path>civicrm/redirect</path>
+    <page_callback>CRM_Egccsearch_Page_Redirect</page_callback>
+    <title>Redirect</title>
+    <access_arguments>access CiviCRM</access_arguments>
+  </item>
+</menu>

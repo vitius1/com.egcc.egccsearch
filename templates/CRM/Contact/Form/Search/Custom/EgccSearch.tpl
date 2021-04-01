@@ -87,23 +87,27 @@
         {/if}
 
         {strip}
+        <a href="#" class="crm-selection-reset crm-hover-button"><i class="crm-i fa-times-circle-o" aria-hidden="true"></i> {ts}Reset all selections{/ts}</a>
         <table class="selector row-highlight" summary="{ts}Search results listings.{/ts}">
             <thead class="sticky">
                 <tr>
                 <th scope="col" title="Select All Rows">{$form.toggleSelect.html}</th>
                 {foreach from=$columnHeaders item=header}
-                    <th scope="col">
-                        {if $header.sort}
-                            {assign var='key' value=$header.sort}
-                            {$sort->_response.$key.link}
-                        {else}
-                            {$header.name}
-                        {/if}
-                    </th>
+                    {if $header.name != 'Color' && $header.name != 'Luminance'}
+                      <th scope="col">                      
+                          {if $header.sort}
+                              {assign var='key' value=$header.sort}
+                              {$sort->_response.$key.link}
+                          {else}
+                              {$header.name}
+                          {/if}                        
+                        </th>
+                    {/if}
                 {/foreach}
                 <th>&nbsp;</th>
                 </tr>
             </thead>
+            <tbody>
 
             {counter start=0 skip=1 print=false}
             {foreach from=$rows item=row}
@@ -111,16 +115,34 @@
                     {assign var=cbName value=$row.checkbox}
                     <td>{$form.$cbName.html}</td>
                     {foreach from=$columnHeaders item=header}
-                        {assign var=fName value=$header.sort}
+                      {assign var=fName value=$header.sort}
+                      {if $header.name == 'Color'}  
+                          <td>
+                            {assign var="tags" value=","|explode:$row.tag}
+                            {assign var="colors" value=","|explode:$row.color}
+                            {assign var="luminances" value=","|explode:$row.luminance}
+                            {assign var="count" value=0}
+                            {foreach from=$colors item=color}
+                              {if $tags[$count] != ""}
+                                <p style='background-color: {$color}; color: {if $luminances[$count]<43}white{else}black{/if};
+                                display: inline-block; border-radius: 10px; text-align: center; padding-right: 9px; padding-left: 9px; 
+                                margin-left: 3px;margin-right: 3px; margin-bottom: -10px;'>{$tags[$count]}</p>
+                                {assign var="count" value=$count+1}
+                              {/if}
+                            {/foreach}
+                          </td>
+                      {elseif $header.name != 'Tags' && $header.name != 'Luminance'}                     
                         {if $fName eq 'sort_name'}
                             <td><a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=`$row.contact_id`&key=`$qfKey`"}">{$row.sort_name}</a></td>
                         {else}
                             <td>{$row.$fName}</td>
                         {/if}
+                      {/if}
                     {/foreach}
                     <td>{$row.action}</td>
                 </tr>
             {/foreach}
+          </tbody>
         </table>
         {/strip}
 
@@ -131,9 +153,58 @@
     {* END Actions/Results section *}
     </div>
     </div>
+    {*include file="CRM/common/searchJs.tpl"*}
 {/if}
 
 
 
 </div>
 {/if}
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script type="text/javascript">
+{literal}
+function CountryChange(value) {
+  if(value!="") {
+    var o;
+    CRM.api3('StateProvince', 'get', {
+      "sequential": 1,
+      "return": ["name"],
+      "country_id": value,
+      "options": {"limit":0}
+    }).then(function(result) {
+      $("#s2id_kraj .select2-search-choice").remove();
+      $("#kraj").find('option').remove();
+      $("#kraj").attr('placeholder', '- libovolný kraj -');
+      $("#kraj").attr("disabled", false);
+      for (var i = 0; i < result["values"].length; i++) {
+        o=new Option(result["values"][i]["name"], result["values"][i]["id"]);
+        $(o).html(result["values"][i]["name"]);
+        $("#kraj").append(o);
+
+      }
+    }, function(error) {
+      // oops
+    });
+  } else {
+    //$("#kraj option:selected").prop("selected", false);
+    $("#s2id_kraj .select2-search-choice").remove();
+    $("#kraj").find('option').remove();
+    $("#kraj").attr("disabled", true);
+  }
+}
+
+
+
+
+$("body").on("click", "#showHide", function(){
+  if($("#showHide").is(":checked")){
+    $(".show-hide-radio").show();
+  } else {
+    $(".show-hide-radio").hide();
+  }
+
+});
+CRM.$(".crm-ajax-selection-form").removeClass("crm-ajax-selection-form");
+{/literal}
+</script>
